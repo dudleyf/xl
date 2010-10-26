@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<book xmlns="http://www.henrikmartensson.org/ns/testunitxml/test1">
+    <chapter id="a" type="">
+        <title>First Chapter</title>
+        <p>This <em type="medium">is</em> the first chapter.</p>
+        <section>
+            <title>First Chapter, First Section</title>
+            <?pi1?>
+            <?pi2 content?>
+            <?pi3 more content?>
+        </section>
+    </chapter>
+    <chapter id="b" type="" xmlns="http://www.henrikmartensson.org/ns/testunitxml/test2">
+        <title>Second Chapter</title>
+        <p>This is the second chapter.</p>
+        <t3:section xmlns:t3="http://www.henrikmartensson.org/ns/testunitxml/test3">
+            <t3:title>Second Chapter, Second Section</t3:title>
+            <p><![CDATA[This is a
+
+                CDATA section.]]></p>
+        </t3:section>
+    </chapter>
+</book>
