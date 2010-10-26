@@ -71,20 +71,24 @@ module Xl::Coordinates
   #
   # @todo Rename this and +column_index_from_string+ to reflect that they're complements
   def get_column_letter(n)
-    col_name = ""
-    quotient = n
-    while n > 26
-      quotient = n / 26
-      rest = n % 26
-      if rest > 0
-        col_name = (64 + rest).chr + col_name
-      else
-        col_name = 'Z' + col_name
-        quotient -= 1
+    if n.kind_of?(String)
+      n.upcase
+    else
+      col_name = ""
+      quotient = n
+      while n > 26
+        quotient = n / 26
+        rest = n % 26
+        if rest > 0
+          col_name = (64 + rest).chr + col_name
+        else
+          col_name = 'Z' + col_name
+          quotient -= 1
+        end
+        n = quotient
       end
-      n = quotient
+      col_name = (64 + quotient).chr + col_name
     end
-    col_name = (64 + quotient).chr + col_name
   end
 
 end

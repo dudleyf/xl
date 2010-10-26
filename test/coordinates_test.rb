@@ -15,13 +15,13 @@ class CoordinatesTest < XlTestCase
     assert_equal("ZF", col)
     assert_equal(46, row)
   end
-  
+
   def test_invalid_coordinate
     assert_raises Xl::CellCoordinatesError do
       coordinate_from_string("AAA")
     end
   end
-  
+
   def test_absolute_coordinate
     assert_equal('$ZF$51', absolute_coordinate('ZF51'))
   end
@@ -42,5 +42,10 @@ class CoordinatesTest < XlTestCase
     assert_equal 'ZZZ', get_column_letter(18278)
     assert_equal 'AA', get_column_letter(27)
     assert_equal 'Z', get_column_letter(26)
+  end
+
+  def test_column_letter_with_letter
+    assert_equal 'ZZZ', get_column_letter('ZZZ')
+    assert_equal 'A', get_column_letter('a')
   end
 end

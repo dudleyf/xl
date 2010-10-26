@@ -63,7 +63,11 @@ class WorksheetTest < XlTestCase
 
   def test_cell_alternate_coordinates
     ws = Xl::Worksheet.new(@wb)
+
     c = ws.cell(8,4)
+    assert_equal "D8", c.get_coordinate
+
+    c = ws.cell(8,'D')
     assert_equal "D8", c.get_coordinate
   end
 
