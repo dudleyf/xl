@@ -104,6 +104,18 @@ class WriteTest < XlTestCase
     assert_xml_equal test_data('writer/expected/sheet1_hyperlink.xml.rels'), content
   end
 
+  def test_write_worksheet_with_merged_cells
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').value = 'test'
+    ws.merge('A1:B1')
+    assert ws.merged_cells.include?('A1:B1')
+
+    content = Xl::Xml.write_worksheet(ws, {'test' => 0}, {})
+    assert_xml_equal test_data('worksheet-merged-cells.xml'), content
+  end
+
   def test_hyperlink_value
     wb = Xl::Workbook.new
     ws = wb.create_sheet

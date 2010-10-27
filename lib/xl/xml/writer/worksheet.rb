@@ -14,6 +14,7 @@ module Xl::Xml::Writer::Worksheet
       add_sheet_format_pr(doc.root, worksheet)
       add_worksheet_cols(doc.root, worksheet)
       add_worksheet_data(doc.root, worksheet, string_table, style_table)
+      add_worksheet_merged_cells(doc.root, worksheet)
       add_worksheet_hyperlinks(doc.root, worksheet)
     end
   end
@@ -104,13 +105,15 @@ module Xl::Xml::Writer::Worksheet
 
         c = make_subnode(row, 'c', attrs)
 
-        if cell.string?
-          make_subnode(c, 'v') << string_table[value]
-        elsif cell.formula?
-          make_subnode(c, 'f') << value[1..-1]
-          make_subnode(c, 'v')
-        else
-          make_subnode(c, 'v') << value
+        unless value.nil?
+          if cell.string?
+            make_subnode(c, 'v') << string_table[value]
+          elsif cell.formula?
+            make_subnode(c, 'f') << value[1..-1]
+            make_subnode(c, 'v')
+          else
+            make_subnode(c, 'v') << value
+          end
         end
       end
     end
@@ -131,6 +134,16 @@ module Xl::Xml::Writer::Worksheet
             'r:id' => cell.hyperlink_rel_id
           })
         end
+      end
+    end
+  end
+
+  def add_worksheet_merged_cells(root, worksheet)
+    unless worksheet.merged_cells.empty?
+      count = worksheet.merged_cells.length
+      merge_cells = make_subnode(root, 'mergeCells', :count => count)
+      worksheet.merged_cells.each do |ref|
+        make_subnode(merge_cells, 'mergeCell', :ref => ref)
       end
     end
   end

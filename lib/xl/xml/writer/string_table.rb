@@ -6,7 +6,7 @@ module Xl::Xml::Writer::StringTable
     # @todo Extract to Worksheet#strings
     workbook.worksheets.each do |sheet|
       sheet.get_cell_collection.each do |cell|
-        if cell.string?
+        if cell.string? && !cell.raw_value.nil?
           strings_list << cell.raw_value
         end
       end

@@ -167,6 +167,7 @@ class Xl::Worksheet
   attr_accessor :row_dimensions
   attr_accessor :column_dimensions
   attr_accessor :cells
+  attr_accessor :merged_cells
   attr_accessor :styles
   attr_accessor :relationships
   attr_accessor :active_cell
@@ -205,6 +206,7 @@ class Xl::Worksheet
     end
 
     @cells = {}
+    @merged_cells = []
     @styles = {}
     @relationships = []
     @selected_cell = 'A1'
@@ -339,57 +341,49 @@ class Xl::Worksheet
   end
 
   # Find a 2D array of cells representing the given range.
-  #
-  # @param [String] range_string cell range string or named range name
-  # @param [Fixnum] row number of rows to offset, defaults to 0, ignored
-  #   if +range_string+ is a named range or a single cell coordinate
-  # @param [Fixnum] column number of columns to offset, defaults to 0, ignored
-  #   if +range_string+ is a named range or a single cell coordinate
-  # @return [Array<Array<Cell>>] a 2D array of cells with optional row and column offsets
-  def range(range_string, row=0, column=0)
-    if range_string.include?(':') # R1C1 notation
-      range_from_coordinates(range_string, row, column)
-    elsif coordinate?(range_string)
-      cell(range_string)
+  def range(*args)
+    if args.length == 4
+      range_from_rows_and_columns(*args)
     else
-      range_from_named_range(range_string, row, column)
+      range_string, row_offset, col_offset = args
+      if coordinate?(range_string)
+        cell(range_string)
+      elsif range_string.include?(':') # R1C1 notation
+        range_from_coordinates(range_string, row_offset, col_offset)
+      else
+        range_from_named_range(range_string, row_offset, col_offset)
+      end
     end
   end
 
   # @private
-  def range_from_coordinates(range_string, row_offset, column_offset)
-    res = []
+  def range_from_rows_and_columns(min_row, min_col, max_row, max_col)
+    (min_row..max_row).map do |r|
+      (min_col..max_col).map {|c| cell(r, c)}
+    end
+  end
+
+  # @private
+  def range_from_coordinates(range_string, row_offset=nil, column_offset=nil)
     min_range, max_range = range_string.split(':')
 
     min_col, min_row = coordinate_from_string(min_range)
     max_col, max_row = coordinate_from_string(max_range)
 
-    if column_offset
-      min_col = get_column_letter(column_index_from_string(min_col) + column_offset)
-      max_col = get_column_letter(column_index_from_string(max_col) + column_offset)
-    end
-
     min_col = column_index_from_string(min_col)
     max_col = column_index_from_string(max_col)
 
-    cache_cols = {}
-
-    (min_col .. max_col).each do |col|
-      cache_cols[col] = get_column_letter(col)
+    if column_offset
+      min_col += column_offset
+      max_col += column_offset
     end
 
-    rows = (min_row+row_offset .. max_row+row_offset)
-    cols = (min_col .. max_col)
-
-    rows.each do |row|
-      new_row = []
-      cols.each do |col|
-        new_row << cell('%s%s' % [cache_cols[col], row])
-      end
-      res << new_row
+    if row_offset
+      min_row += row_offset
+      max_row += row_offset
     end
 
-    res
+    range_from_rows_and_columns(min_row, min_col, max_row, max_col)
   end
 
   # @private
@@ -432,4 +426,14 @@ class Xl::Worksheet
     @relationships[rel_id]
   end
 
+  # Merge cells.
+  #
+  # @param (see Xl::Worksheet#range)
+  def merge(*args)
+    range = range(*args)
+    topleft = range.first.first.get_coordinate
+    bottomright = range.last.last.get_coordinate
+
+    self.merged_cells << "#{topleft}:#{bottomright}"
+  end
 end

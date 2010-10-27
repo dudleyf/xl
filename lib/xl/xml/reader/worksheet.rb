@@ -23,11 +23,14 @@ module Xl::Xml::Reader::Worksheet
     end
 
     def on_start_element_ns(name, attrs, prefix, uri, namespaces)
-      if name == 'c'
-        @coordinate = attrs['r']
-        @data_type = attrs.fetch('t', 'n')
-        @style_id = attrs['s']
-        @read_value = true
+      case name
+        when 'c'
+          @coordinate = attrs['r']
+          @data_type = attrs.fetch('t', 'n')
+          @style_id = attrs['s']
+          @read_value = true
+        when 'mergeCell'
+          @ws.merged_cells << attrs['ref']
       end
     end
 
