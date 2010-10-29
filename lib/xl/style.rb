@@ -2,24 +2,63 @@ require 'digest/md5'
 
 module Xl
 
-  module Hashable
-    include Comparable
+  module Attributes
 
-    def crc
-      Digest::MD5.hexdigest(self.to_yaml)
+    def self.included(base)
+      base.extend(ClassMethods)
     end
 
-    def <=>(other)
-      self.crc <=> other.crc
+    def attributes
+      @attributes
+    end
+
+    def write_attribute(attr_name, value)
+      @attributes ||= {}
+      @attributes[attr_name.to_s] = value
+    end
+
+    def read_attribute(attr_name)
+      @attributes ||= {}
+      @attributes[attr_name.to_s]
     end
 
     def ==(other)
-      self.crc == other.crc
+      @attributes == other.attributes
     end
+
+    def eql?(other)
+      self == other
+    end
+
+    def hash
+      @attributes.hash
+    end
+
+    module ClassMethods
+
+      def attribute(attr_name)
+        attr_name = attr_name.to_s
+        class_eval <<-RUBY, __FILE__, __LINE__
+          def #{attr_name}
+            read_attribute("#{attr_name}")
+          end
+
+          def #{attr_name}=(value)
+            write_attribute("#{attr_name}", value)
+          end
+
+          def #{attr_name}?
+            !!read_attribute("#{attr_name}")
+          end
+        RUBY
+      end
+
+    end
+
   end
 
   class Color
-    include Hashable
+    include Attributes
 
     BLACK = 'FF000000'
     WHITE = 'FFFFFFFF'
@@ -32,15 +71,15 @@ module Xl
     YELLOW = 'FFFFFF00'
     DARKYELLOW = 'FF808000'
 
-    attr_accessor :index
+    attribute :index
 
     def initialize(index)
-      @index = index
+      self.index = index
     end
   end
 
   class Font
-    include Hashable
+    include Attributes
 
     UNDERLINE_NONE = 'none'
     UNDERLINE_DOUBLE = 'double'
@@ -48,23 +87,31 @@ module Xl
     UNDERLINE_SINGLE = 'single'
     UNDERLINE_SINGLE_ACCOUNTING = 'singleAccounting'
 
-    attr_accessor :name, :size, :bold, :italic, :superscript, :subscript, :underline, :strikethrough, :color
+    attribute :name
+    attribute :size
+    attribute :bold
+    attribute :italic
+    attribute :superscript
+    attribute :subscript
+    attribute :underline
+    attribute :strikethrough
+    attribute :color
 
     def initialize(opts={})
-      @name = opts[:name] || 'Calibri'
-      @size = opts[:size] || 11
-      @bold = opts[:bold] || false
-      @italic = opts[:italic] || false
-      @superscript = opts[:superscript] || false
-      @subscript = opts[:subscript] || false
-      @underline = opts[:underline] || UNDERLINE_NONE
-      @strikethrough = opts[:strikethrough] || false
-      @color = opts[:color] || Color.new(Color::BLACK)
+      self.name = opts[:name] || 'Calibri'
+      self.size = opts[:size] || 11
+      self.bold = opts[:bold] || false
+      self.italic = opts[:italic] || false
+      self.superscript = opts[:superscript] || false
+      self.subscript = opts[:subscript] || false
+      self.underline = opts[:underline] || UNDERLINE_NONE
+      self.strikethrough = opts[:strikethrough] || false
+      self.color = opts[:color] || Color.new(Color::BLACK)
     end
   end
 
   class Fill
-    include Hashable
+    include Attributes
 
     FILL_NONE = 'none'
     FILL_SOLID = 'solid'
@@ -88,18 +135,21 @@ module Xl
     FILL_PATTERN_LIGHTVERTICAL = 'lightVertical'
     FILL_PATTERN_MEDIUMGRAY = 'mediumGray'
 
-    attr_accessor :fill_type, :rotation, :start_color, :end_color
+    attribute :fill_type
+    attribute :rotation
+    attribute :start_color
+    attribute :end_color
 
     def initialize(opts={})
-      @fill_type = opts[:fill_type] || FILL_NONE
-      @rotation = opts[:rotation] || 0
-      @start_color = opts[:start_color] || Color.new(Color::WHITE)
-      @end_color = opts[:end_color] || Color.new(Color::BLACK)
+      self.fill_type = opts[:fill_type] || FILL_NONE
+      self.rotation = opts[:rotation] || 0
+      self.start_color = opts[:start_color] || Color.new(Color::WHITE)
+      self.end_color = opts[:end_color] || Color.new(Color::BLACK)
     end
   end
 
   class Border
-    include Hashable
+    include Attributes
 
     BORDER_NONE = 'none'
     BORDER_DASHDOT = 'dashDot'
@@ -116,42 +166,53 @@ module Xl
     BORDER_THICK = 'thick'
     BORDER_THIN = 'thin'
 
-    attr_accessor :border_style, :color
+    attribute :border_style
+    attribute :color
 
     def initialize(opts={})
-      @border_style = opts[:border_style] || BORDER_NONE
-      @color = opts[:color] || Color.new(Color::BLACK)
+      self.border_style = opts[:border_style] || BORDER_NONE
+      self.color = opts[:color] || Color.new(Color::BLACK)
     end
   end
 
   class Borders
-    include Hashable
+    include Attributes
 
     DIAGONAL_NONE = 0
     DIAGONAL_UP = 1
     DIAGONAL_DOWN = 2
     DIAGONAL_BOTH = 3
 
-    attr_accessor :left, :right, :top, :bottom, :diagonal, :diagonal_direction, :all_borders, :outline, :inside, :vertical, :horizontal
+    attribute :left
+    attribute :right
+    attribute :top
+    attribute :bottom
+    attribute :diagonal
+    attribute :diagonal_direction
+    attribute :all_borders
+    attribute :outline
+    attribute :inside
+    attribute :vertical
+    attribute :horizontal
 
     def initialize(opts={})
-      @left = opts[:left] || Border.new
-      @right = opts[:right] || Border.new
-      @top = opts[:top] || Border.new
-      @bottom = opts[:bottom] || Border.new
-      @diagonal = opts[:diagonal] || Border.new
-      @diagonal_direction = opts[:diagonal_direction] || DIAGONAL_NONE
+      self.left = opts[:left] || Border.new
+      self.right = opts[:right] || Border.new
+      self.top = opts[:top] || Border.new
+      self.bottom = opts[:bottom] || Border.new
+      self.diagonal = opts[:diagonal] || Border.new
+      self.diagonal_direction = opts[:diagonal_direction] || DIAGONAL_NONE
 
-      @all_borders = opts[:all_borders] || Border.new
-      @outline = opts[:outline] || Border.new
-      @inside = opts[:inside] || Border.new
-      @vertical = opts[:vertical] || Border.new
-      @horizontal = opts[:horizontal] || Border.new
+      self.all_borders = opts[:all_borders] || Border.new
+      self.outline = opts[:outline] || Border.new
+      self.inside = opts[:inside] || Border.new
+      self.vertical = opts[:vertical] || Border.new
+      self.horizontal = opts[:horizontal] || Border.new
     end
   end
 
   class Alignment
-    include Hashable
+    include Attributes
 
     HORIZONTAL_GENERAL = 'general'
     HORIZONTAL_LEFT = 'left'
@@ -165,20 +226,25 @@ module Xl
     VERTICAL_CENTER = 'center'
     VERTICAL_JUSTIFY = 'justify'
 
-    attr_accessor :horizontal, :vertical, :text_rotation, :wrap_text, :shrink_to_fit, :indent
+    attribute :horizontal
+    attribute :vertical
+    attribute :text_rotation
+    attribute :wrap_text
+    attribute :shrink_to_fit
+    attribute :indent
 
     def initialize(opts={})
-      @horizontal = opts[:horizontal] || HORIZONTAL_GENERAL
-      @vertical = opts[:vertical] || VERTICAL_BOTTOM
-      @text_rotation = opts[:text_rotation] || 0
-      @wrap_text = opts[:wrap_text] || false
-      @shrink_to_fit = opts[:shrink_to_fit] || false
-      @indent = opts[:indent] || 0
+      self.horizontal = opts[:horizontal] || HORIZONTAL_GENERAL
+      self.vertical = opts[:vertical] || VERTICAL_BOTTOM
+      self.text_rotation = opts[:text_rotation] || 0
+      self.wrap_text = opts[:wrap_text] || false
+      self.shrink_to_fit = opts[:shrink_to_fit] || false
+      self.indent = opts[:indent] || 0
     end
   end
 
   class NumberFormat
-    include Hashable
+    include Attributes
 
     FORMAT_GENERAL = 'General'
 
@@ -283,18 +349,17 @@ module Xl
       BUILTIN_FORMATS.each {|k,v| h[v] = k }
     end
 
+    attribute :format_code
+    attribute :format_index
+
     def initialize(opts={})
-      @format_code = opts[:format_code] || FORMAT_GENERAL
-      @format_index = opts[:format_index] || 0
+      self.format_code = opts[:format_code] || FORMAT_GENERAL
+      self.format_index = opts[:format_index] || 0
     end
 
     def format_code=(code)
-      @format_code = code
-      @format_index = builtin_format_id(format_code)
-    end
-
-    def format_code
-      @format_code
+      write_attribute('format_code', code)
+      write_attribute('format_index', builtin_format_id(format_code))
     end
 
     def builtin_format_code(index)
@@ -305,42 +370,48 @@ module Xl
       BUILTIN_FORMATS_REVERSE[format]
     end
 
-    def builtin?(format=@format_code)
+    def builtin?(format=self.format_code)
       BUILTIN_FORMATS.values.include?(format)
     end
 
-    def date_format?(format=@format_code)
+    def date_format?(format=self.format_code)
       DATE_PATTERNS.find {|x| x.match(format)}
     end
   end
 
   class Protection
-    include Hashable
+    include Attributes
 
     PROTECTION_INHERIT = 'inherit'
     PROTECTION_PROTECTED = 'protected'
     PROTECTION_UNPROTECTED = 'unprotected'
 
-    attr_accessor :locked, :hidden
+    attribute :locked
+    attribute :hidden
 
     def initialize(opts={})
-      @locked = opts[:locked] || PROTECTION_INHERIT
-      @hidden = opts[:hidden] || PROTECTION_INHERIT
+      self.locked = opts[:locked] || PROTECTION_INHERIT
+      self.hidden = opts[:hidden] || PROTECTION_INHERIT
     end
   end
 
   class Style
-    include Hashable
+    include Attributes
 
-    attr_accessor :font, :fill, :borders, :alignment, :number_format, :protection
+    attribute :font
+    attribute :fill
+    attribute :borders
+    attribute :alignment
+    attribute :number_format
+    attribute :protection
 
     def initialize(opts={})
-      @font = opts[:font] || Font.new
-      @fill = opts[:fill] || Fill.new
-      @borders = opts[:borders] || Borders.new
-      @alignment = opts[:alignment] || Alignment.new
-      @number_format = opts[:number_format] || NumberFormat.new
-      @protection = opts[:protection] || Protection.new
+      self.font = opts[:font] || Font.new
+      self.fill = opts[:fill] || Fill.new
+      self.borders = opts[:borders] || Borders.new
+      self.alignment = opts[:alignment] || Alignment.new
+      self.number_format = opts[:number_format] || NumberFormat.new
+      self.protection = opts[:protection] || Protection.new
     end
   end
 end

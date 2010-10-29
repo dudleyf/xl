@@ -58,13 +58,7 @@ class WriteTest < XlTestCase
     ws.cell('F1').value = '13%'
 
     shared_style_table = Xl::Xml.create_style_table(wb)
-    style_id_by_hash = {}.tap do |h|
-      shared_style_table.each do |style, id|
-        h[style.crc] = id
-      end
-    end
-
-    content = Xl::Xml.write_worksheet(ws, {}, style_id_by_hash)
+    content = Xl::Xml.write_worksheet(ws, {}, shared_style_table)
     assert_xml_equal test_data('writer/expected/sheet1_style.xml'), content
   end
 

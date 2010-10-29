@@ -1,17 +1,14 @@
 module Xl::Xml::Writer::StyleTable
 
   def create_style_table(workbook)
-    styles_by_crc = {}
+    styles_list = []
+
     workbook.worksheets.each do |sheet|
-      sheet.styles.values.each do |style|
-        styles_by_crc[style.crc] = style
-      end
+      styles_list.concat(sheet.styles.values)
     end
 
     {}.tap do |h|
-      styles_by_crc.values.each_with_index do |style, i|
-        h[style] = i+1
-      end
+      styles_list.uniq.each_with_index {|s, i| h[s] = i}
     end
   end
 

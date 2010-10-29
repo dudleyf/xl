@@ -31,13 +31,8 @@ module Xl::Xml::Writer
       archive.add_style(write_style_table(shared_style_table))
       archive.add_workbook(write_workbook(workbook))
 
-      style_id_by_hash = {}
-      shared_style_table.each do |style, id|
-        style_id_by_hash[style.crc] = id
-      end
-
       workbook.worksheets.each_with_index do |sheet, i|
-        archive.add_worksheet("sheet#{i+1}", write_worksheet(sheet, shared_string_table, style_id_by_hash))
+        archive.add_worksheet("sheet#{i+1}", write_worksheet(sheet, shared_string_table, shared_style_table))
         if sheet.relationships
           archive.add_worksheet_rels("sheet#{i+1}.xml.rels", write_worksheet_rels(sheet))
         end

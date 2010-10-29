@@ -76,7 +76,6 @@ module Xl::Xml::Writer::Worksheet
   def add_worksheet_data(root, worksheet, string_table, style_table)
     sheet_data = make_subnode(root, 'sheetData')
     max_column = worksheet.get_highest_column
-    style_id_by_hash = style_table
     cells_by_row = {}
     worksheet.get_cell_collection.each do |cell|
       cells_by_row[cell.row] ||= []
@@ -100,7 +99,7 @@ module Xl::Xml::Writer::Worksheet
         coordinate = cell.get_coordinate
         attrs = {'r' => coordinate, 't' => cell.data_type}
         if worksheet.styles.include?(coordinate)
-          attrs['s'] = style_id_by_hash[worksheet.styles[coordinate].crc]
+          attrs['s'] = style_table[worksheet.styles[coordinate]]
         end
 
         c = make_subnode(row, 'c', attrs)

@@ -35,4 +35,22 @@ class StyleTest < XlTestCase
     style_table = Xl::Xml.read_style_table(test_data('reader/empty-workbook-styles.xml'))
     assert_equal(2, style_table.length)
   end
+
+  def test_styles_equal
+    s1 = Xl::Style.new
+    s2 = Xl::Style.new
+
+    assert s1 == s2
+    assert s1.eql?(s2)
+    assert s1.hash == s2.hash
+    assert [s1,s2].uniq == [s1]
+
+    s2.font.size = 20
+
+    assert s1 != s2
+    assert !s1.eql?(s2)
+    assert s1.hash != s2.hash
+    assert [s1,s2].uniq == [s1,s2]
+  end
+
 end
