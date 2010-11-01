@@ -98,6 +98,7 @@ module Xl::Xml::Writer::Worksheet
         value = cell.raw_value
         coordinate = cell.get_coordinate
         attrs = {'r' => coordinate, 't' => cell.data_type}
+
         if worksheet.styles.include?(coordinate)
           attrs['s'] = style_table[worksheet.styles[coordinate]]
         end

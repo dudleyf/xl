@@ -70,11 +70,18 @@ module Xl
     DARKGREEN = 'FF008000'
     YELLOW = 'FFFFFF00'
     DARKYELLOW = 'FF808000'
+    BROWN = 'FFA52A2A'
+    CYAN = 'FF00FFFF'
+    GRAY = 'FF808080'
+    MAGENTA = 'FFFF00FF'
+    ORANGE = 'FFFFA500'
+    PINK = 'FFFFC0CB'
+    PURPLE = 'FF800080'
 
-    attribute :index
+    attribute :rgb
 
-    def initialize(index)
-      self.index = index
+    def initialize(rgb)
+      self.rgb = rgb
     end
   end
 
@@ -95,6 +102,8 @@ module Xl
     attribute :subscript
     attribute :underline
     attribute :strikethrough
+    attribute :outline
+    attribute :shadow
     attribute :color
 
     def initialize(opts={})
@@ -104,8 +113,10 @@ module Xl
       self.italic = opts[:italic] || false
       self.superscript = opts[:superscript] || false
       self.subscript = opts[:subscript] || false
-      self.underline = opts[:underline] || UNDERLINE_NONE
+      self.underline = opts[:underline] || nil
       self.strikethrough = opts[:strikethrough] || false
+      self.outline = opts[:outline] || false
+      self.shadow = opts[:shadow] || false
       self.color = opts[:color] || Color.new(Color::BLACK)
     end
   end
@@ -397,6 +408,13 @@ module Xl
 
   class Style
     include Attributes
+
+    def self.default_font
+      @default_font = Font.new({
+        :name => 'Calibri',
+        :size => 11
+      })
+    end
 
     attribute :font
     attribute :fill

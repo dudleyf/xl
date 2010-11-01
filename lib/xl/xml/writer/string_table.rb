@@ -1,6 +1,6 @@
 module Xl::Xml::Writer::StringTable
 
-  def create_string_table(workbook)
+  def extract_string_table(workbook)
     strings_list = []
 
     # @todo Extract to Worksheet#strings

@@ -21,7 +21,7 @@ class ReadTest < XlTestCase
   end
 
   def test_read_worksheet_with_merged_cells
-    xml_source = test_data('worksheet-merged-cells.xml')
+    xml_source = test_data('reader/worksheet-merged-cells.xml')
     ws = Xl::Xml.read_worksheet(xml_source, Xl::Workbook.new, 'Sheet 1', {0 => 'test'}, {1 => Xl::Style.new})
 
     assert_kind_of Xl::Worksheet, ws

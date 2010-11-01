@@ -1,30 +1,19 @@
 module Xl::Xml::Writer::StyleTable
 
-  def create_style_table(workbook)
-    styles_list = []
-
-    workbook.worksheets.each do |sheet|
-      styles_list.concat(sheet.styles.values)
-    end
-
-    {}.tap do |h|
-      styles_list.uniq.each_with_index {|s, i| h[s] = i}
-    end
-  end
-
   def style_table_document(style_table)
     XML::Document.new.tap do |doc|
       styles = style_table.sort_by {|x| x.last}.map {|x| x.first}
       number_format_table = extract_number_formats(styles)
+      font_table = extract_fonts(styles)
 
       doc.root = make_node('styleSheet', 'xmlns' => Xl::Xml::NAMESPACES['ns'])
 
       add_number_formats(doc.root, number_format_table)
-      add_fonts(doc.root, styles)
+      add_fonts(doc.root, font_table)
       add_fills(doc.root, styles)
       add_borders(doc.root, styles)
       add_cell_style_xfs(doc.root, styles)
-      add_cell_xfs(doc.root, styles, number_format_table)
+      add_cell_xfs(doc.root, styles, number_format_table, font_table)
       add_cell_styles(doc.root, styles)
       add_dxfs(doc.root, styles)
       add_table_styles(doc.root, styles)
@@ -34,8 +23,6 @@ module Xl::Xml::Writer::StyleTable
   def write_style_table(style_table)
     style_table_document(style_table).to_s
   end
-
-  private
 
   def add_number_formats(root, format_table)
     user_formats = format_table.reject {|fmt, id| fmt.builtin?}
@@ -47,15 +34,31 @@ module Xl::Xml::Writer::StyleTable
     end
   end
 
-  # @todo actually write real fonts
-  def add_fonts(root, styles)
-    make_subnode(root, 'fonts', 'count' => 1).tap do |fonts|
-      font = make_subnode(fonts, 'font')
-      make_subnode(font, 'sz', 'val' => 11)
-      make_subnode(font, 'color', 'theme' => 1)
-      make_subnode(font, 'name', 'val' => 'Calibri')
-      make_subnode(font, 'family', 'val' => 2)
-      make_subnode(font, 'scheme', 'val' => 'minor')
+  def add_fonts(root, font_table)
+    fonts = font_table.sort_by {|x| x.last}.map {|x| x.first}
+    make_subnode(root, 'fonts', 'count' => fonts.length).tap do |fonts_node|
+      fonts.each do |font|
+        font_node = make_subnode(fonts_node, 'font')
+        make_subnode(font_node, 'b') if font.bold
+        make_subnode(font_node, 'strike') if font.strikethrough
+        make_subnode(font_node, 'outline') if font.outline
+        make_subnode(font_node, 'shadow') if font.shadow
+        if font.underline
+          if font.underline == Xl::Font::UNDERLINE_SINGLE
+            make_subnode(font_node, 'u')
+          else
+            make_subnode(font_node, 'u', 'val' => font.underline)
+          end
+        end
+        if font.superscript
+          make_subnode(font_node, 'vertAlign', 'val' => "superscript")
+        elsif font.subscript
+          make_subnode(font_node, 'vertAlign', 'val' => "subscript")
+        end
+        make_subnode(font_node, 'sz', 'val' => font.size) if font.size
+        make_subnode(font_node, 'color', 'rgb' => font.color.rgb) if font.color
+        make_subnode(font_node, 'name', 'val' => font.name) if font.name
+      end
     end
   end
 
@@ -102,23 +105,36 @@ module Xl::Xml::Writer::StyleTable
      end
    end
 
-   def add_cell_xfs(root, styles, number_format_table)
+   def add_cell_xfs(root, styles, number_format_table, font_table)
      make_subnode(root, 'cellXfs', 'count' => styles.length+1).tap do |cell_xfs|
-       make_subnode(cell_xfs, 'xf', 'numFmtId' => 0, 'fontId' => 0, 'fillId' => 0, 'xfId' => 0, 'borderId' => 0)
+       empty_attrs = {
+          'numFmtId' => 0,
+          'fontId' => 0,
+          'fillId' => 0,
+          'xfId' => 0,
+          'borderId' => 0
+       }
+       make_subnode(cell_xfs, 'xf', empty_attrs)
        styles.each do |style|
-         make_subnode(cell_xfs, 'xf', {
-           'numFmtId' => number_format_table[style.number_format],
-           'applyNumberFormat' => 1,
-           'fontId' => 0,
-           'fillId' => 0,
-           'xfId' => 0,
-           'borderId' => 0
-         })
+         attrs = empty_attrs.dup
+
+         id = number_format_table[style.number_format]
+         unless id.nil? || id == 0
+           attrs['numFmtId'] = id
+           attrs['applyNumberFormat'] = 1
+         end
+
+         id = font_table[style.font]
+         unless id.nil? || id == 0
+           attrs['fontId'] = font_table[style.font]
+           attrs['applyFont'] = 1
+         end
+
+         make_subnode(cell_xfs, 'xf', attrs)
        end
      end
    end
 
-   # @todo actually write real dxfs
    def add_dxfs(root, styles)
      make_subnode(root, 'dxfs', 'count' => 0)
    end
@@ -154,4 +170,30 @@ module Xl::Xml::Writer::StyleTable
      format_table
    end
 
+   def extract_fonts(styles)
+     fonts = []
+
+     fonts << Xl::Style.default_font
+     styles.each do |style|
+       fonts << style.font unless fonts.include?(style.font)
+     end
+
+     {}.tap do |h|
+       fonts.uniq.each_with_index {|f, i| h[f] = i}
+     end
+   end
+
+   def extract_style_table(workbook)
+     styles = []
+
+     workbook.worksheets.each do |sheet|
+       styles.concat(sheet.styles.values)
+     end
+
+     {}.tap do |h|
+       # Offset style indices by 1 since we always want the first
+       # entry in the cellXfs node to be zeroes
+       styles.uniq.each_with_index {|s, i| h[s] = i+1}
+     end
+   end
 end

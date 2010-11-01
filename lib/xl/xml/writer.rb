@@ -18,8 +18,8 @@ module Xl::Xml::Writer
     Xl::Zip.write(file) do |archive|
       workbook.worksheets.each {|x| x.garbage_collect}
 
-      shared_string_table = create_string_table(workbook)
-      shared_style_table = create_style_table(workbook)
+      shared_string_table = extract_string_table(workbook)
+      shared_style_table = extract_style_table(workbook)
 
       archive.add_shared_strings(write_string_table(shared_string_table))
       archive.add_content_types(write_content_types(workbook))

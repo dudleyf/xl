@@ -2,7 +2,7 @@ require File.join(File.dirname(__FILE__), "test_helper")
 
 class StringsTest < XlTestCase
 
-  def test_create_string_table
+  def test_extract_string_table
     wb = Xl::Workbook.new
     ws = wb.create_sheet
 
@@ -10,7 +10,7 @@ class StringsTest < XlTestCase
     ws.cell('B13').value = 'world'
     ws.cell('D28').value = 'hello'
 
-    table = Xl::Xml.create_string_table(wb)
+    table = Xl::Xml.extract_string_table(wb)
 
     assert_equal({
       'hello' => 0,

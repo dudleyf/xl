@@ -1,27 +1,37 @@
 require File.join(File.dirname(__FILE__), "test_helper")
 
 class StyleTest < XlTestCase
-  def setup
-    @workbook = Xl::Workbook.new
-    @worksheet = @workbook.create_sheet
-    @worksheet.cell('A1').value = '12.34%'
+  include Xl::Xml
+
+  def test_extract_style_table
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+    ws.cell('A1').value = '12.34%'
     now = Time.now
-    @worksheet.cell('B4').value = now
-    @worksheet.cell('B5').value = now
-    @worksheet.cell('C14').value = "This is a test"
-    @worksheet.cell('D9').value = '31.31415'
-    @worksheet.cell('D9').style.number_format.format_code = Xl::NumberFormat::FORMAT_NUMBER_00
-  end
-  
-  def test_create_style_table
-    table = Xl::Xml.create_style_table(@workbook)
+    ws.cell('B4').value = now
+    ws.cell('B5').value = now
+    ws.cell('C14').value = "This is a test"
+    ws.cell('D9').value = '31.31415'
+    ws.cell('D9').style.number_format.format_code = Xl::NumberFormat::FORMAT_NUMBER_00
+
+    table = Xl::Xml.extract_style_table(wb)
     assert_equal(3, table.size)
   end
 
   def test_write_style_table
-    table = Xl::Xml.create_style_table(@workbook)
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+    ws.cell('A1').value = '12.34%'
+    now = Time.now
+    ws.cell('B4').value = now
+    ws.cell('B5').value = now
+    ws.cell('C14').value = "This is a test"
+    ws.cell('D9').value = '31.31415'
+    ws.cell('D9').style.number_format.format_code = Xl::NumberFormat::FORMAT_NUMBER_00
+
+    table = Xl::Xml.extract_style_table(wb)
     content = Xl::Xml.write_style_table(table)
-    assert_xml_equal(test_data('writer/expected/simple-styles.xml'), content)
+    assert_xml_equal(test_data('writer/expected/styles_simple.xml'), content)
   end
 
   def test_read_style_table
@@ -51,6 +61,28 @@ class StyleTest < XlTestCase
     assert !s1.eql?(s2)
     assert s1.hash != s2.hash
     assert [s1,s2].uniq == [s1,s2]
+  end
+
+  def test_write_style_table_fonts
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('E3').style.font = Xl::Font.new({
+      :name => "Times New Roman",
+      :size => 33,
+      :bold => true,
+      :italic => true,
+      :superscript => true,
+      :outline => true,
+      :shadow => true,
+      :underline => Xl::Font::UNDERLINE_SINGLE,
+      :strikethrough => true,
+      :color => Xl::Color.new(Xl::Color::RED)
+    })
+
+    table = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_style_table(table)
+    assert_xml_equal test_data('writer/expected/styles_font.xml'), content
   end
 
 end

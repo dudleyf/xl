@@ -57,7 +57,7 @@ class WriteTest < XlTestCase
     ws = wb.create_sheet
     ws.cell('F1').value = '13%'
 
-    shared_style_table = Xl::Xml.create_style_table(wb)
+    shared_style_table = Xl::Xml.extract_style_table(wb)
     content = Xl::Xml.write_worksheet(ws, {}, shared_style_table)
     assert_xml_equal test_data('writer/expected/sheet1_style.xml'), content
   end
@@ -107,7 +107,20 @@ class WriteTest < XlTestCase
     assert ws.merged_cells.include?('A1:B1')
 
     content = Xl::Xml.write_worksheet(ws, {'test' => 0}, {})
-    assert_xml_equal test_data('worksheet-merged-cells.xml'), content
+    assert_xml_equal test_data('writer/expected/sheet1_merged.xml'), content
+  end
+
+  def test_write_worksheet_with_fonts
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').value = 'test'
+    ws.cell('A1').style.font.size = '20'
+    ws.cell('A1').style.font.underline = true
+
+    styles = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_worksheet(ws, {'test' => 0}, styles)
+    assert_xml_equal test_data('writer/expected/sheet1_font.xml'), content
   end
 
   def test_hyperlink_value
