@@ -1,7 +1,4 @@
-require 'digest/md5'
-
 module Xl
-
   module Attributes
 
     def self.included(base)
@@ -177,12 +174,33 @@ module Xl
     BORDER_THICK = 'thick'
     BORDER_THIN = 'thin'
 
+    MEDIUM_OR_THICK_BORDERS = [
+      BORDER_DOUBLE,
+      BORDER_MEDIUM,
+      BORDER_MEDIUMDASHDOT,
+      BORDER_MEDIUMDASHDOTDOT,
+      BORDER_MEDIUMDASHED,
+      BORDER_SLANTDASHDOT,
+      BORDER_THICK
+    ]
+
     attribute :border_style
     attribute :color
 
     def initialize(opts={})
-      self.border_style = opts[:border_style] || BORDER_NONE
-      self.color = opts[:color] || Color.new(Color::BLACK)
+      self.color = opts[:color]
+      self.border_style = opts[:border_style]# || BORDER_NONE
+    end
+
+    def border_style=(s)
+      if read_attribute('color').nil?
+        write_attribute('color', Color.new(Color::BLACK))
+      end
+      write_attribute('border_style', s)
+    end
+
+    def medium_or_thick?
+      MEDIUM_OR_THICK_BORDERS.include?(border_style)
     end
   end
 
@@ -220,6 +238,7 @@ module Xl
       self.vertical = opts[:vertical] || Border.new
       self.horizontal = opts[:horizontal] || Border.new
     end
+
   end
 
   class Alignment
@@ -424,12 +443,13 @@ module Xl
     attribute :protection
 
     def initialize(opts={})
-      self.font = opts[:font] || Font.new
+      self.font = opts[:font] || self.class.default_font
       self.fill = opts[:fill] || Fill.new
       self.borders = opts[:borders] || Borders.new
       self.alignment = opts[:alignment] || Alignment.new
       self.number_format = opts[:number_format] || NumberFormat.new
       self.protection = opts[:protection] || Protection.new
     end
+
   end
 end

@@ -123,6 +123,23 @@ class WriteTest < XlTestCase
     assert_xml_equal test_data('writer/expected/sheet1_font.xml'), content
   end
 
+  def test_write_worksheet_with_borders
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').value = 'test'
+
+    ws.cell('A1').style.borders.top.border_style = Xl::Border::BORDER_THIN
+    ws.cell('A1').style.borders.bottom.border_style = Xl::Border::BORDER_DOUBLE
+    ws.cell('A1').style.borders.bottom.color = Xl::Color.new(Xl::Color::RED)
+    ws.cell('A1').style.borders.left.border_style = Xl::Border::BORDER_HAIR
+    ws.cell('A1').style.borders.right.border_style = Xl::Border::BORDER_THICK
+
+    styles = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_worksheet(ws, {'test' => 0}, styles)
+    assert_xml_equal test_data('writer/expected/sheet1_border.xml'), content
+  end
+
   def test_hyperlink_value
     wb = Xl::Workbook.new
     ws = wb.create_sheet

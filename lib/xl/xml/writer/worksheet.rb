@@ -82,28 +82,41 @@ module Xl::Xml::Writer::Worksheet
       cells_by_row[cell.row] << cell
     end
 
-    cells_by_row.sort_by {|k,v| k}.each do |row_idx, cell|
+    rows = cells_by_row.sort_by {|k,v| k}
+    rows.each do |row_idx, cells|
       row_dimension = worksheet.row_dimensions[row_idx]
-      attrs = {'r' => row_idx, 'spans' => "1:#{max_column}"}
+
+      row = make_subnode(sheet_data, 'row', {
+        'r' => row_idx,
+        'spans' => "1:#{max_column}"
+      })
 
       if row_dimension.height > 0
-        attrs['ht'] = row_dimension.height
-        attrs['customHeight'] = 1
+        row['ht'] = row_dimension.height.to_s
+        row['customHeight'] = '1'
       end
 
-      row = make_subnode(sheet_data, 'row', attrs)
+      if fat_bottomed_row?(cells) || fat_topped_row?(cells_by_row[row_idx+1])
+        row['thickBot'] = '1'
+      end
+
+      if fat_topped_row?(cells) || fat_bottomed_row?(cells_by_row[row_idx-1])
+        row['thickTop'] = '1'
+      end
+
       row_cells = cells_by_row[row_idx]
       sorted_cells = row_cells.sort_by {|x| column_index_from_string(x.column)}
       sorted_cells.each do |cell|
         value = cell.raw_value
         coordinate = cell.get_coordinate
-        attrs = {'r' => coordinate, 't' => cell.data_type}
+        c = make_subnode(row, 'c', {
+          'r' => coordinate,
+          't' => cell.data_type
+        })
 
-        if worksheet.styles.include?(coordinate)
-          attrs['s'] = style_table[worksheet.styles[coordinate]]
+        if cell.has_style?
+          c['s'] = style_table[cell.style].to_s
         end
-
-        c = make_subnode(row, 'c', attrs)
 
         unless value.nil?
           if cell.string?
@@ -118,6 +131,27 @@ module Xl::Xml::Writer::Worksheet
       end
     end
 
+    # If the last row we have cells for has a thick bottom, we need
+    # to add an extra row with a thick top
+    if !rows.empty? && fat_bottomed_row?(rows.last.last)
+      make_subnode(sheet_data, 'row', {
+        'r' => rows.length+1,
+        'spans' => "1:#{max_column}",
+        'thickTop' => 1
+      })
+    end
+  end
+
+  def fat_bottomed_row?(cells)
+    Array(cells).any? do |cell|
+      cell.has_style? && cell.style.borders.bottom.medium_or_thick?
+    end
+  end
+
+  def fat_topped_row?(cells)
+    Array(cells).any? do |cell|
+      cell.has_style? && cell.style.borders.top.medium_or_thick?
+    end
   end
 
   def add_worksheet_hyperlinks(root, worksheet)

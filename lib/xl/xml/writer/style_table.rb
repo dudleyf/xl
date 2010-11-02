@@ -5,15 +5,15 @@ module Xl::Xml::Writer::StyleTable
       styles = style_table.sort_by {|x| x.last}.map {|x| x.first}
       number_format_table = extract_number_formats(styles)
       font_table = extract_fonts(styles)
+      border_table = extract_borders(styles)
 
       doc.root = make_node('styleSheet', 'xmlns' => Xl::Xml::NAMESPACES['ns'])
-
       add_number_formats(doc.root, number_format_table)
       add_fonts(doc.root, font_table)
       add_fills(doc.root, styles)
-      add_borders(doc.root, styles)
+      add_borders(doc.root, border_table)
       add_cell_style_xfs(doc.root, styles)
-      add_cell_xfs(doc.root, styles, number_format_table, font_table)
+      add_cell_xfs(doc.root, styles, number_format_table, font_table, border_table)
       add_cell_styles(doc.root, styles)
       add_dxfs(doc.root, styles)
       add_table_styles(doc.root, styles)
@@ -74,15 +74,31 @@ module Xl::Xml::Writer::StyleTable
     end
   end
 
-  # @todo actually write real borders
-  def add_borders(root, styles)
-    make_subnode(root, 'borders', 'count' => 1).tap do |borders|
-      border = make_subnode(borders, 'border')
-      make_subnode(border, 'left')
-      make_subnode(border, 'right')
-      make_subnode(border, 'top')
-      make_subnode(border, 'bottom')
-      make_subnode(border, 'diagonal')
+  def add_borders(root, border_table)
+    borderses = border_table.sort_by {|x| x.last}.map {|x| x.first}
+    make_subnode(root, 'borders', 'count' => borderses.length).tap do |borders_node|
+      borderses.each do |borders|
+        add_border_node(borders_node, borders)
+      end
+    end
+  end
+
+  def add_border_node(root, borders=nil)
+    border_node = make_subnode(root, 'border')
+
+    %w[left right top bottom diagonal].each do |d|
+      node = make_subnode(border_node, d)
+      if borders
+        border = borders.send(d)
+        if border
+          if border.border_style
+            node['style'] = border.border_style
+            if border.color
+              make_subnode(node, 'color', :rgb => border.color.rgb)
+            end
+          end
+        end
+      end
     end
   end
 
@@ -105,32 +121,34 @@ module Xl::Xml::Writer::StyleTable
      end
    end
 
-   def add_cell_xfs(root, styles, number_format_table, font_table)
-     make_subnode(root, 'cellXfs', 'count' => styles.length+1).tap do |cell_xfs|
-       empty_attrs = {
-          'numFmtId' => 0,
-          'fontId' => 0,
-          'fillId' => 0,
-          'xfId' => 0,
-          'borderId' => 0
-       }
-       make_subnode(cell_xfs, 'xf', empty_attrs)
+   def add_cell_xfs(root, styles, number_format_table, font_table, border_table)
+     make_subnode(root, 'cellXfs', 'count' => styles.length).tap do |cell_xfs|
        styles.each do |style|
-         attrs = empty_attrs.dup
+         xf_node = make_subnode(cell_xfs, 'xf', {
+           'numFmtId' => 0,
+           'fontId' => 0,
+           'fillId' => 0,
+           'xfId' => 0,
+           'borderId' => 0
+          })
 
-         id = number_format_table[style.number_format]
-         unless id.nil? || id == 0
-           attrs['numFmtId'] = id
-           attrs['applyNumberFormat'] = 1
+         num_fmt_id = number_format_table[style.number_format]
+         unless num_fmt_id.nil? || num_fmt_id == 0
+           xf_node['numFmtId'] = num_fmt_id.to_s
+           xf_node['applyNumberFormat'] = '1'
          end
 
-         id = font_table[style.font]
-         unless id.nil? || id == 0
-           attrs['fontId'] = font_table[style.font]
-           attrs['applyFont'] = 1
+         font_id = font_table[style.font]
+         unless font_id.nil? || font_id == 0
+           xf_node['fontId'] = font_id.to_s
+           xf_node['applyFont'] = '1'
          end
 
-         make_subnode(cell_xfs, 'xf', attrs)
+         border_id = border_table[style.borders]
+         unless border_id.nil? || border_id == 0
+           xf_node['borderId'] = border_id.to_s
+           xf_node['applyBorder'] = '1'
+         end
        end
      end
    end
@@ -146,6 +164,12 @@ module Xl::Xml::Writer::StyleTable
        'defaultTableStyle' => 'TableStyleMedium9',
        'defaultPivotStyle' => 'PivotStyleLight16'
      })
+   end
+
+   def extract_style_table(workbook)
+     {}.tap do |h|
+       workbook.styles.each_with_index {|s, i| h[s] = i}
+     end
    end
 
    def extract_number_formats(styles)
@@ -173,9 +197,8 @@ module Xl::Xml::Writer::StyleTable
    def extract_fonts(styles)
      fonts = []
 
-     fonts << Xl::Style.default_font
      styles.each do |style|
-       fonts << style.font unless fonts.include?(style.font)
+       fonts << style.font# unless fonts.include?(style.font)
      end
 
      {}.tap do |h|
@@ -183,17 +206,15 @@ module Xl::Xml::Writer::StyleTable
      end
    end
 
-   def extract_style_table(workbook)
-     styles = []
+   def extract_borders(styles)
+     borders = []
 
-     workbook.worksheets.each do |sheet|
-       styles.concat(sheet.styles.values)
+     styles.each do |style|
+       borders << style.borders# unless borders.include?(style.borders)
      end
 
      {}.tap do |h|
-       # Offset style indices by 1 since we always want the first
-       # entry in the cellXfs node to be zeroes
-       styles.uniq.each_with_index {|s, i| h[s] = i+1}
+       borders.uniq.each_with_index {|f, i| h[f] = i}
      end
    end
 end

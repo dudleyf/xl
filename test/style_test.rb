@@ -15,7 +15,7 @@ class StyleTest < XlTestCase
     ws.cell('D9').style.number_format.format_code = Xl::NumberFormat::FORMAT_NUMBER_00
 
     table = Xl::Xml.extract_style_table(wb)
-    assert_equal(3, table.size)
+    assert_equal(4, table.size)
   end
 
   def test_write_style_table
@@ -80,9 +80,60 @@ class StyleTest < XlTestCase
       :color => Xl::Color.new(Xl::Color::RED)
     })
 
+    # ws.cell('E3').style.font = Xl::Font.new({
+    #   :name => "Times New Roman",
+    #   :size => 33,
+    #   :bold => true,
+    #   :italic => true,
+    #   :superscript => true,
+    #   :outline => true,
+    #   :shadow => true,
+    #   :underline => :single,
+    #   :strikethrough => true,
+    #   :color => :red
+    # })
+
     table = Xl::Xml.extract_style_table(wb)
     content = Xl::Xml.write_style_table(table)
     assert_xml_equal test_data('writer/expected/styles_font.xml'), content
   end
 
+  def test_write_style_table_borders
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').style.borders = Xl::Borders.new({
+      :top => Xl::Border.new(:border_style => Xl::Border::BORDER_THIN),
+      :bottom => Xl::Border.new(:border_style => Xl::Border::BORDER_DOUBLE, :color => Xl::Color.new(Xl::Color::RED)),
+      :left => Xl::Border.new(:border_style => Xl::Border::BORDER_HAIR),
+      :right => Xl::Border.new(:border_style => Xl::Border::BORDER_THICK)
+    })
+
+    # ws.cell('A1').style.borders = {
+    #   :top => :thin,
+    #   :bottom => {:style => :double, :color => :red},
+    #   :left => :dashed
+    #   :right => :thick
+    # })
+
+    table = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_style_table(table)
+    assert_xml_equal test_data('writer/expected/styles_border.xml'), content
+  end
+
+  def test_border_medium_or_thick
+    Xl::Border::MEDIUM_OR_THICK_BORDERS.each do |s|
+       assert Xl::Border.new(:border_style => s).medium_or_thick?, s
+     end
+
+    [Xl::Border::BORDER_NONE,
+     Xl::Border::BORDER_DASHDOT,
+     Xl::Border::BORDER_DASHDOTDOT,
+     Xl::Border::BORDER_DASHED,
+     Xl::Border::BORDER_DOTTED,
+     Xl::Border::BORDER_HAIR,
+     Xl::Border::BORDER_THIN].each do |s|
+       assert !Xl::Border.new(:border_style => s).medium_or_thick?, s
+     end
+  end
 end

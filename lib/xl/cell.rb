@@ -2,7 +2,14 @@
 class Xl::Cell
   include Xl::Coordinates
 
-  attr_accessor :column, :row, :value, :data_type, :parent, :xf_index, :hyperlink_rel
+  attr_accessor :column,
+    :row,
+    :value,
+    :data_type,
+    :parent,
+    :xf_index,
+    :hyperlink_rel,
+    :style
 
   ERROR_CODES = {
     '#NULL!'  => 0,
@@ -30,11 +37,9 @@ class Xl::Cell
     @parent = worksheet
     @column = column.upcase
     @row = row
-
     @value = nil
     @hyperlink_rel = nil
     @data_type = TYPE_NULL
-    @xf_index = 0
 
     self.value = value unless value.nil?
   end
@@ -70,7 +75,7 @@ class Xl::Cell
   end
 
   def inspect
-    "<Cell %s.%s" % [@parent.title, get_coordinate]
+    "<Cell %s.%s>" % [@parent.title, get_coordinate]
   end
 
   # Get the value held in the cell
@@ -131,11 +136,11 @@ class Xl::Cell
   end
 
   def has_style?
-    @parent.styles.has_key?(get_coordinate)
+    !@style.nil?
   end
 
   def style
-    @parent.get_style(get_coordinate)
+    @style ||= Xl::Style.new
   end
 
   def data_type_for_value(val)

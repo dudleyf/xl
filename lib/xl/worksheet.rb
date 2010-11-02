@@ -168,7 +168,6 @@ class Xl::Worksheet
   attr_accessor :column_dimensions
   attr_accessor :cells
   attr_accessor :merged_cells
-  attr_accessor :styles
   attr_accessor :relationships
   attr_accessor :active_cell
   attr_accessor :selected_cell
@@ -207,7 +206,6 @@ class Xl::Worksheet
 
     @cells = {}
     @merged_cells = []
-    @styles = {}
     @relationships = []
     @selected_cell = 'A1'
     @active_cell = 'A1'
@@ -435,5 +433,10 @@ class Xl::Worksheet
     bottomright = range.last.last.get_coordinate
 
     self.merged_cells << "#{topleft}:#{bottomright}"
+  end
+
+  # Return a list of the unique styles in this worksheet
+  def styles
+    get_cell_collection.map {|x| x.style if x.has_style? }.compact.uniq
   end
 end

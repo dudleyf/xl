@@ -17,7 +17,7 @@ module Xl::Xml::Reader::Worksheet
         end
         @ws.cell(@coordinate).value = value
         if !@style_id.nil?
-          @ws.styles[@coordinate] = @style_table[@style_id.to_i]
+          @ws.cell(@coordinate).style = @style_table[@style_id.to_i]
         end
       end
     end

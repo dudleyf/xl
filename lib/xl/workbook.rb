@@ -49,7 +49,6 @@ class Xl::Workbook
   attr_accessor :active_sheet_index
   attr_accessor :named_ranges
   attr_accessor :properties
-  attr_accessor :style
   attr_accessor :security
 
   def initialize(opts={})
@@ -58,7 +57,6 @@ class Xl::Workbook
     @active_sheet_index = 0
     @named_ranges = []
     @properties = DocumentProperties.new
-    @style = Xl::Style.new
     @security = DocumentSecurity.new
   end
 
@@ -163,6 +161,14 @@ class Xl::Workbook
   # @param [NamedRange] range the range to remove
   def remove_named_range(range)
     @named_ranges.delete(range)
+  end
+
+  # Return a list of the unique styles in the workbook.
+  def styles
+    @empty_style ||= Xl::Style.new
+    [@empty_style].tap do |styles|
+      worksheets.each {|s| styles.concat(s.styles)}.uniq
+    end
   end
 
 end
