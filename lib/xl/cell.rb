@@ -100,7 +100,7 @@ class Xl::Cell
       if percentage_search && val.strip != '%'
         val = val.gsub('%', '').to_f / 100.0
         set_value_explicit(val, TYPE_NUMERIC)
-        set_number_format(Xl::NumberFormat::FORMAT_PERCENTAGE)
+        style.number_format.format_code = Xl::NumberFormat::FORMAT_PERCENTAGE
         return true
       end
 
@@ -116,7 +116,7 @@ class Xl::Cell
       #   end
       #   days = (h / 24.0) + (m / 1440.0) + (s / 86400.0)
       #   set_value_explicit(days, TYPE_NUMERIC)
-      #   set_number_format(Xl::NumberFormat::FORMAT_DATE_TIME3)
+      #   style.number_format.format_code = Xl::NumberFormat::FORMAT_DATE_TIME3
       #   return true
       # end
     elsif data_type == TYPE_NUMERIC
@@ -124,15 +124,11 @@ class Xl::Cell
       if (Xl::DateHelper.datelike?(val))
         val = Xl::DateHelper.ruby_to_excel(val)
         set_value_explicit(val, TYPE_NUMERIC)
-        set_number_format(Xl::NumberFormat::FORMAT_DATE_YYYYMMDD2)
+        style.number_format.format_code = Xl::NumberFormat::FORMAT_DATE_YYYYMMDD2
         return true
       end
     end
     set_value_explicit(val, data_type)
-  end
-
-  def set_number_format(format_code)
-    style.number_format.format_code = format_code
   end
 
   def has_style?
