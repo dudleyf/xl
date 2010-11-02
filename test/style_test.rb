@@ -6,6 +6,7 @@ class StyleTest < XlTestCase
   def test_extract_style_table
     wb = Xl::Workbook.new
     ws = wb.create_sheet
+
     ws.cell('A1').value = '12.34%'
     now = Time.now
     ws.cell('B4').value = now
@@ -136,4 +137,21 @@ class StyleTest < XlTestCase
        assert !Xl::Border.new(:border_style => s).medium_or_thick?, s
      end
   end
+
+  def test_write_style_table_alignment
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').style.alignment = Xl::Alignment.new(:horizontal => Xl::Alignment::HORIZONTAL_LEFT, :indent => 1)
+    ws.cell('A2').style.alignment = Xl::Alignment.new(:horizontal => Xl::Alignment::HORIZONTAL_RIGHT)
+    ws.cell('A3').style.alignment = Xl::Alignment.new(:text_rotation => 45)
+    ws.cell('A4').style.alignment = Xl::Alignment.new(:vertical => Xl::Alignment::VERTICAL_CENTER)
+    ws.cell('A5').style.alignment = Xl::Alignment.new(:wrap_text => true)
+    ws.cell('A6').style.alignment = Xl::Alignment.new(:shrink_to_fit => true)
+
+    table = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_style_table(table)
+    assert_xml_equal test_data('writer/expected/styles_align.xml'), content
+  end
+
 end

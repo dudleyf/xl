@@ -140,6 +140,22 @@ class WriteTest < XlTestCase
     assert_xml_equal test_data('writer/expected/sheet1_border.xml'), content
   end
 
+  def test_write_worksheet_with_alignment
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').style.alignment = Xl::Alignment.new(:horizontal => Xl::Alignment::HORIZONTAL_LEFT, :indent => 1)
+    ws.cell('A2').style.alignment = Xl::Alignment.new(:horizontal => Xl::Alignment::HORIZONTAL_RIGHT)
+    ws.cell('A3').style.alignment = Xl::Alignment.new(:text_rotation => 45)
+    ws.cell('A4').style.alignment = Xl::Alignment.new(:vertical => Xl::Alignment::VERTICAL_CENTER)
+    ws.cell('A5').style.alignment = Xl::Alignment.new(:wrap_text => true)
+    ws.cell('A6').style.alignment = Xl::Alignment.new(:shrink_to_fit => true)
+
+    styles = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_worksheet(ws, {}, styles)
+    assert_xml_equal test_data('writer/expected/sheet1_align.xml'), content
+  end
+
   def test_hyperlink_value
     wb = Xl::Workbook.new
     ws = wb.create_sheet

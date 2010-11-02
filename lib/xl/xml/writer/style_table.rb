@@ -4,8 +4,8 @@ module Xl::Xml::Writer::StyleTable
     XML::Document.new.tap do |doc|
       styles = style_table.sort_by {|x| x.last}.map {|x| x.first}
       number_format_table = extract_number_formats(styles)
-      font_table = extract_fonts(styles)
-      border_table = extract_borders(styles)
+      font_table = extract_style_component(:font, styles)
+      border_table = extract_style_component(:borders, styles)
 
       doc.root = make_node('styleSheet', 'xmlns' => Xl::Xml::NAMESPACES['ns'])
       add_number_formats(doc.root, number_format_table)
@@ -149,6 +149,21 @@ module Xl::Xml::Writer::StyleTable
            xf_node['borderId'] = border_id.to_s
            xf_node['applyBorder'] = '1'
          end
+
+         default = Xl::Alignment.new
+         if style.alignment != default
+           align = style.alignment
+           xf_node['applyAlignment'] = '1'
+
+           make_subnode(xf_node, 'alignment').tap do |a|
+             a['horizontal'] = align.horizontal.to_s if align.horizontal != default.horizontal
+             a['vertical'] = align.vertical.to_s if align.vertical != default.vertical
+             a['textRotation'] = align.text_rotation.to_s if align.text_rotation != 0
+             a['wrapText'] = '1' if align.wrap_text
+             a['shrinkToFit'] = '1' if align.shrink_to_fit
+             a['indent'] = align.indent.to_s if align.indent != 0
+           end
+         end
        end
      end
    end
@@ -173,48 +188,28 @@ module Xl::Xml::Writer::StyleTable
    end
 
    def extract_number_formats(styles)
-     format_table = {}
-     formats = []
-     num_fmt_id = 165 # start higher than any builtin
-     num_fmt_offset = 0
+     {}.tap do |table|
+       formats = []
+       num_fmt_id = 165 # start higher than any builtin
 
-     styles.each do |style|
-       formats << style.number_format unless formats.include?(style.number_format)
-     end
-
-     formats.each do |format|
-       if format.builtin?
-         format_table[format] = format.builtin_format_id(format.format_code)
-       else
-         format_table[format] = num_fmt_id + num_fmt_offset
-         num_fmt_offset += 1
+       formats = styles.map {|x| x.number_format }.uniq
+       formats.each do |format|
+         if format.builtin?
+           table[format] = format.builtin_format_id(format.format_code)
+         else
+           table[format] = num_fmt_id
+           num_fmt_id += 1
+         end
        end
      end
-
-     format_table
    end
 
-   def extract_fonts(styles)
-     fonts = []
-
-     styles.each do |style|
-       fonts << style.font# unless fonts.include?(style.font)
-     end
-
-     {}.tap do |h|
-       fonts.uniq.each_with_index {|f, i| h[f] = i}
-     end
-   end
-
-   def extract_borders(styles)
-     borders = []
-
-     styles.each do |style|
-       borders << style.borders# unless borders.include?(style.borders)
-     end
-
-     {}.tap do |h|
-       borders.uniq.each_with_index {|f, i| h[f] = i}
+   def extract_style_component(component, styles)
+     {}.tap do |table|
+       components = styles.map {|x| x.send(component.to_s)}.uniq
+       components.each_with_index do |x,i|
+         table[x] = i
+       end
      end
    end
 end
