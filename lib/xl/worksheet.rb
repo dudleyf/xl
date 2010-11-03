@@ -294,7 +294,7 @@ class Xl::Worksheet
     if coordinate_or_row.kind_of?(String)
       coordinate = coordinate_or_row
     else
-      raise InsufficientCoordinatesError if column.nil?
+      raise Xl::InsufficientCoordinatesError if column.nil?
       coordinate = '%s%s' % [get_column_letter(column), coordinate_or_row]
     end
 
