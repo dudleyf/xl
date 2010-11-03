@@ -156,6 +156,19 @@ class WriteTest < XlTestCase
     assert_xml_equal test_data('writer/expected/sheet1_align.xml'), content
   end
 
+  def test_write_worksheet_with_fills
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').style.fill = Xl::Fill.new(:pattern_type => Xl::Fill::FILL_SOLID, :bg_color => Xl::Color.new(Xl::Color::RED))
+    ws.cell('A2').style.fill = Xl::Fill.new(:pattern_type => Xl::Fill::FILL_PATTERN_DARKVERTICAL, :bg_color => Xl::Color.new(Xl::Color::GREEN))
+    ws.cell('A3').style.fill = Xl::Fill.new(:pattern_type => Xl::Fill::FILL_PATTERN_LIGHTGRID, :bg_color => Xl::Color.new(Xl::Color::ORANGE), :fg_color => Xl::Color.new(Xl::Color::YELLOW))
+
+    styles = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_worksheet(ws, {}, styles)
+    assert_xml_equal test_data('writer/expected/sheet1_fill.xml'), content
+  end
+
   def test_hyperlink_value
     wb = Xl::Workbook.new
     ws = wb.create_sheet

@@ -4,16 +4,17 @@ module Xl::Xml::Writer::StyleTable
     XML::Document.new.tap do |doc|
       styles = style_table.sort_by {|x| x.last}.map {|x| x.first}
       number_format_table = extract_number_formats(styles)
-      font_table = extract_style_component(:font, styles)
-      border_table = extract_style_component(:borders, styles)
+      font_table = extract_fonts(styles)
+      border_table = extract_borders(styles)
+      fill_table = extract_fills(styles)
 
       doc.root = make_node('styleSheet', 'xmlns' => Xl::Xml::NAMESPACES['ns'])
       add_number_formats(doc.root, number_format_table)
       add_fonts(doc.root, font_table)
-      add_fills(doc.root, styles)
+      add_fills(doc.root, fill_table)
       add_borders(doc.root, border_table)
       add_cell_style_xfs(doc.root, styles)
-      add_cell_xfs(doc.root, styles, number_format_table, font_table, border_table)
+      add_cell_xfs(doc.root, styles, number_format_table, font_table, border_table, fill_table)
       add_cell_styles(doc.root, styles)
       add_dxfs(doc.root, styles)
       add_table_styles(doc.root, styles)
@@ -62,15 +63,20 @@ module Xl::Xml::Writer::StyleTable
     end
   end
 
-  # @todo actually write real fills
-  def add_fills(root, styles)
-    make_subnode(root, 'fills', 'count' => 2).tap do |fills|
-
-      fill = make_subnode(fills, 'fill')
-      make_subnode(fill, 'patternFill', 'patternType' => 'none')
-
-      fill = make_subnode(fills, 'fill')
-      make_subnode(fill, 'patternFill', 'patternType' => 'gray125')
+  def add_fills(root, fill_table)
+    fills = fill_table.sort_by {|x| x.last}.map {|x| x.first}
+    make_subnode(root, 'fills', 'count' => fills.length).tap do |fills_node|
+      fills.each do |fill|
+        fill_node = make_subnode(fills_node, 'fill')
+        pattern_fill_node = make_subnode(fill_node, 'patternFill')
+        pattern_fill_node['patternType'] = fill.pattern_type.to_s
+        if fill.bg_color
+          make_subnode(pattern_fill_node, 'bgColor', :rgb => fill.bg_color.rgb)
+        end
+        if fill.fg_color
+          make_subnode(pattern_fill_node, 'fgColor', :rgb => fill.fg_color.rgb)
+        end
+      end
     end
   end
 
@@ -121,7 +127,7 @@ module Xl::Xml::Writer::StyleTable
      end
    end
 
-   def add_cell_xfs(root, styles, number_format_table, font_table, border_table)
+   def add_cell_xfs(root, styles, number_format_table, font_table, border_table, fill_table)
      make_subnode(root, 'cellXfs', 'count' => styles.length).tap do |cell_xfs|
        styles.each do |style|
          xf_node = make_subnode(cell_xfs, 'xf', {
@@ -164,6 +170,12 @@ module Xl::Xml::Writer::StyleTable
              a['indent'] = align.indent.to_s if align.indent != 0
            end
          end
+
+         fill_id = fill_table[style.fill]
+         unless fill_id.nil? || fill_id == 0
+           xf_node['fillId'] = fill_id.to_s
+           xf_node['applyFill'] = '1'
+         end
        end
      end
    end
@@ -202,6 +214,28 @@ module Xl::Xml::Writer::StyleTable
          end
        end
      end
+   end
+
+   def extract_fonts(styles)
+     default_font_styles = [
+       Xl::Style.new(:font => Xl::Font.new(:name => 'Calibri', :size => 11))
+     ]
+     extract_style_component(:font, default_font_styles + styles)
+   end
+
+   def extract_borders(styles)
+     default_borders_styles = [
+       Xl::Style.new(:borders => Xl::Borders.new)
+     ]
+     extract_style_component(:borders, default_borders_styles + styles)
+   end
+
+   def extract_fills(styles)
+     default_fill_styles = [
+       Xl::Style.new(:fill => Xl::Fill.new(:pattern_type => Xl::Fill::FILL_NONE)),
+       Xl::Style.new(:fill => Xl::Fill.new(:pattern_type => Xl::Fill::FILL_PATTERN_GRAY125))
+     ]
+     extract_style_component(:fill, default_fill_styles + styles)
    end
 
    def extract_style_component(component, styles)

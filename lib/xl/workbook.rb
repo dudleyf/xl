@@ -170,5 +170,4 @@ class Xl::Workbook
       worksheets.each {|s| styles.concat(s.styles)}.uniq
     end
   end
-
 end

@@ -143,16 +143,14 @@ module Xl
     FILL_PATTERN_LIGHTVERTICAL = 'lightVertical'
     FILL_PATTERN_MEDIUMGRAY = 'mediumGray'
 
-    attribute :fill_type
-    attribute :rotation
-    attribute :start_color
-    attribute :end_color
+    attribute :pattern_type
+    attribute :bg_color
+    attribute :fg_color
 
     def initialize(opts={})
-      self.fill_type = opts[:fill_type] || FILL_NONE
-      self.rotation = opts[:rotation] || 0
-      self.start_color = opts[:start_color] || Color.new(Color::WHITE)
-      self.end_color = opts[:end_color] || Color.new(Color::BLACK)
+      self.pattern_type = opts[:pattern_type] || FILL_NONE
+      self.bg_color = opts[:bg_color]
+      self.fg_color = opts[:fg_color]
     end
   end
 
@@ -428,13 +426,6 @@ module Xl
   class Style
     include Attributes
 
-    def self.default_font
-      @default_font = Font.new({
-        :name => 'Calibri',
-        :size => 11
-      })
-    end
-
     attribute :font
     attribute :fill
     attribute :borders
@@ -443,7 +434,7 @@ module Xl
     attribute :protection
 
     def initialize(opts={})
-      self.font = opts[:font] || self.class.default_font
+      self.font = opts[:font] || Font.new
       self.fill = opts[:fill] || Fill.new
       self.borders = opts[:borders] || Borders.new
       self.alignment = opts[:alignment] || Alignment.new

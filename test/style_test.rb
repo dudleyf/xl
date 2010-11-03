@@ -32,6 +32,7 @@ class StyleTest < XlTestCase
 
     table = Xl::Xml.extract_style_table(wb)
     content = Xl::Xml.write_style_table(table)
+
     assert_xml_equal(test_data('writer/expected/styles_simple.xml'), content)
   end
 
@@ -154,4 +155,16 @@ class StyleTest < XlTestCase
     assert_xml_equal test_data('writer/expected/styles_align.xml'), content
   end
 
+  def test_write_style_table_fills
+    wb = Xl::Workbook.new
+    ws = wb.create_sheet
+
+    ws.cell('A1').style.fill = Xl::Fill.new(:pattern_type => Xl::Fill::FILL_SOLID, :bg_color => Xl::Color.new(Xl::Color::RED))
+    ws.cell('A2').style.fill = Xl::Fill.new(:pattern_type => Xl::Fill::FILL_PATTERN_DARKVERTICAL, :bg_color => Xl::Color.new(Xl::Color::GREEN))
+    ws.cell('A3').style.fill = Xl::Fill.new(:pattern_type => Xl::Fill::FILL_PATTERN_LIGHTGRID, :bg_color => Xl::Color.new(Xl::Color::ORANGE), :fg_color => Xl::Color.new(Xl::Color::YELLOW))
+
+    table = Xl::Xml.extract_style_table(wb)
+    content = Xl::Xml.write_style_table(table)
+    assert_xml_equal test_data('writer/expected/styles_fill.xml'), content
+  end
 end
