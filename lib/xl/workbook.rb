@@ -167,7 +167,7 @@ class Xl::Workbook
   def styles
     @empty_style ||= Xl::Style.new
     [@empty_style].tap do |styles|
-      worksheets.each {|s| styles.concat(s.styles)}.uniq
-    end
+      worksheets.each {|s| styles.concat(s.styles)}
+    end.uniq
   end
 end

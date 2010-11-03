@@ -94,4 +94,21 @@ class WorkbookTest < XlTestCase
     wb.remove_named_range(r)
     assert(!wb.get_named_ranges.include?(r))
   end
+
+  def test_styles
+    wb = Xl::Workbook.new
+    s = wb.create_sheet
+    s2 = wb.create_sheet
+
+    [s, s2].each do |sheet|
+      %w[A E G].each do |col|
+        sheet.cell(1, col).style.alignment = Xl::Alignment.new(:horizontal => Xl::Alignment::HORIZONTAL_LEFT, :indent => 1)
+        sheet.cell(2, col).style.alignment = Xl::Alignment.new(:horizontal => Xl::Alignment::HORIZONTAL_RIGHT)
+        sheet.cell(3, col).style.alignment = Xl::Alignment.new(:text_rotation => 45)
+      end
+    end
+
+    styles = wb.styles
+    assert_equal 4, wb.styles.length # 3 unique styles plus 1 empty
+  end
 end
