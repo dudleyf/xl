@@ -1,10 +1,9 @@
 Xl
 ==
 
-This is a library for reading and writing Excel OOXML files, based on [openpyxl][opxl].
-It's a pretty direct port, so much of it is still pythonic. I expect the interface
-(and implementation) will change drastically before it's all said and done.
-It's brand new, so it's likely buggy, possibly unusable, and certainly incomplete.
+A library for reading and writing Excel OOXML files based on [openpyxl][opxl].
+It was a quick hack, and I'm not currently using it. I may or may not start working on it again someday.
+It's likely buggy, possibly unusable, and certainly incomplete.
 Also it has a stupid name.
 
 Usage
